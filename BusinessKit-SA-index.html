@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BusinessKit SA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7f5;color:#17221c}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}
+#loading{position:fixed;inset:0;background:white;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.spin{width:40px;height:40px;border:4px solid #dfe8e2;border-top-color:#078a49;border-radius:50%;animation:s 1s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#eaf7ef}
+.authbox,.card{background:#fff;border-radius:16px;box-shadow:0 4px 18px #00000012}
+.authbox{width:100%;max-width:430px;padding:26px}
+.logo{text-align:center;margin-bottom:22px}.mark{width:62px;height:62px;margin:auto;border-radius:17px;background:#078a49;color:#fff;display:grid;place-items:center;font-weight:bold;font-size:22px}.logo h1{margin:10px 0 5px}.muted{color:#69756e}
+.tabs{display:flex;background:#eef2ef;border-radius:10px;padding:4px;margin-bottom:18px}.tabs button{flex:1;border:0;background:transparent;padding:10px;border-radius:8px}.tabs .active{background:#fff;color:#078a49;font-weight:bold}
+.field{margin:0 0 14px}.field label{display:block;font-size:13px;font-weight:bold;margin-bottom:6px}.field input,.field textarea,.field select{width:100%;padding:11px;border:1px solid #dbe3de;border-radius:9px;outline:0;background:#fff}.field textarea{min-height:90px;resize:vertical}
+.primary{width:100%;border:0;border-radius:9px;padding:12px;background:#078a49;color:#fff;font-weight:bold}.msg{text-align:center;margin-top:10px;font-size:13px}
+#app{display:none}.top{height:62px;background:#fff;border-bottom:1px solid #dde5df;display:flex;align-items:center;justify-content:space-between;padding:0 15px;position:sticky;top:0;z-index:50}.brand{display:flex;align-items:center;gap:9px;font-weight:bold}.brandmark{width:35px;height:35px;border-radius:9px;background:#078a49;color:white;display:grid;place-items:center}
+.topright{display:flex;align-items:center;gap:8px}.plan{font-size:11px;font-weight:bold;background:#e8f7ef;color:#06733d;padding:7px 10px;border-radius:20px}.hamb{border:0;background:#eef2ef;border-radius:8px;width:37px;height:37px;font-size:20px}
+.sidebar{position:fixed;top:62px;bottom:0;left:0;width:245px;background:#fff;border-right:1px solid #dde5df;padding:13px;overflow:auto;z-index:45}.navtitle{font-size:10px;color:#89938e;font-weight:bold;margin:15px 9px 7px;text-transform:uppercase}.nav{display:block;width:100%;border:0;background:transparent;text-align:left;padding:10px;border-radius:8px;margin-bottom:3px;color:#435149}.nav.active,.nav:hover{background:#e8f7ef;color:#06733d;font-weight:bold}
+.main{margin-left:245px;padding:20px}.page{display:none}.page.active{display:block}.header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.header h2{margin:0}.header p{margin:5px 0 0;color:#69756e;font-size:13px}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:0;border-radius:8px;padding:9px 12px;font-weight:bold}.green{background:#078a49;color:#fff}.light{background:#edf2ef}.danger{background:#fdeceb;color:#c62828}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.stat{padding:17px}.stat small{color:#69756e}.stat strong{display:block;font-size:25px;margin-top:7px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{padding:18px;margin-bottom:16px}.quick{display:grid;grid-template-columns:1fr 1fr;gap:9px}.quick button{text-align:left;border:1px solid #dbe3de;background:#fff;padding:13px;border-radius:9px}.quick button:hover{background:#e8f7ef}
+.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;padding:11px;border-bottom:1px solid #e3e8e5;font-size:13px}th{background:#f7f9f8}.empty{text-align:center;padding:30px;color:#69756e}.badge{display:inline-block;padding:5px 8px;border-radius:14px;font-size:10px;font-weight:bold}.paid{background:#e5f7ed;color:#08783e}.unpaid{background:#fff0dc;color:#9a5e00}
+.modal{display:none;position:fixed;inset:0;background:#0007;z-index:200;align-items:center;justify-content:center;padding:15px}.modal.show{display:flex}.modalbox{background:#fff;border-radius:15px;padding:20px;width:100%;max-width:530px;max-height:90vh;overflow:auto}.modalhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.close{border:0;background:#eef1ef;border-radius:7px;width:34px;height:34px;font-size:18px}
+.avatar{width:60px;height:60px;border-radius:50%;background:#078a49;color:#fff;display:grid;place-items:center;font-size:22px;font-weight:bold}.profile{display:flex;gap:14px;align-items:center;margin-bottom:18px}
+#toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#17221c;color:#fff;padding:11px 16px;border-radius:9px;z-index:500;font-size:13px}
+@media(max-width:850px){.sidebar{transform:translateX(-110%);transition:.2s;box-shadow:4px 0 20px #0002}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+@media(min-width:851px){.hamb{display:none}}
+@media(max-width:480px){.main{padding:14px}.header{align-items:flex-start;flex-direction:column}.stats{gap:9px}.stat{padding:13px}.stat strong{font-size:20px}.plan{display:none}.quick{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spin"></div><strong>Loading BusinessKit SA...</strong></div>
+
+<section id="auth">
+<div class="authbox">
+<div class="logo"><div class="mark">BK</div><h1>BusinessKit SA</h1><p class="muted">Your South African business toolkit</p></div>
+<div class="tabs"><button id="lt" class="active" onclick="authMode('login')">Log in</button><button id="st" onclick="authMode('signup')">Create account</button></div>
+
+<form id="loginForm">
+<div class="field"><label>Email</label><input id="le" type="email" required></div>
+<div class="field"><label>Password</label><input id="lp" type="password" required></div>
+<button class="primary">Log in</button>
+</form>
+
+<form id="signupForm" class="hidden">
+<div class="field"><label>Business name</label><input id="sb" required></div>
+<div class="field"><label>Your name</label><input id="so" required></div>
+<div class="field"><label>Email</label><input id="se" type="email" required></div>
+<div class="field"><label>Password</label><input id="sp" type="password" minlength="6" required></div>
+<button class="primary">Create account</button>
+</form>
+<div id="authmsg" class="msg"></div>
+</div>
+</section>
+
+<div id="app">
+<header class="top"><div class="brand"><div class="brandmark">BK</div>BusinessKit SA</div><div class="topright"><span id="plan" class="plan">FREE PLAN</span><button class="hamb" onclick="menu()">☰</button></div></header>
+<aside id="sidebar" class="sidebar">
+<div class="navtitle">Main</div>
+<button class="nav active" data-p="dashboard" onclick="go('dashboard')">📊 Dashboard</button>
+<button class="nav" data-p="customers" onclick="go('customers')">👥 Customers</button>
+<button class="nav" data-p="products" onclick="go('products')">📦 Products & Services</button>
+<button class="nav" data-p="quotes" onclick="go('quotes')">📝 Quotes</button>
+<button class="nav" data-p="invoices" onclick="go('invoices')">🧾 Invoices</button>
+<div class="navtitle">Tools</div>
+<button class="nav" data-p="directory" onclick="go('directory')">📒 Business Directory</button>
+<button class="nav" data-p="whatsapp" onclick="go('whatsapp')">💬 WhatsApp Centre</button>
+<button class="nav" data-p="auto" onclick="go('auto')">🤖 Auto Response</button>
+<div class="navtitle">Business</div>
+<button class="nav" data-p="premium" onclick="go('premium')">⭐ Premium / PRO</button>
+<button class="nav" data-p="profile" onclick="go('profile')">🏢 Business Profile</button>
+<button class="nav" data-p="account" onclick="go('account')">⚙️ Account</button>
+</aside>
+
+<main class="main">
+
+<section id="dashboard" class="page active">
+<div class="header"><div><h2>Dashboard</h2><p id="welcome"></p></div><div class="actions"><button class="btn green" onclick="openCustomer()">+ Customer</button><button class="btn light" onclick="openInvoice()">+ Invoice</button></div></div>
+<div class="stats">
+<div class="stat card"><small>Customers</small><strong id="sc">0</strong></div>
+<div class="stat card"><small>Products</small><strong id="spc">0</strong></div>
+<div class="stat card"><small>Invoices</small><strong id="sic">0</strong></div>
+<div class="stat card"><small>Paid revenue</small><strong id="sr">R0.00</strong></div>
+</div>
+<div class="grid2">
+<div class="card"><h3>Quick Actions</h3><div class="quick"><button onclick="openCustomer()">👤<br><b>Add customer</b></button><button onclick="openProduct()">📦<br><b>Add product</b></button><button onclick="openQuote()">📝<br><b>Create quote</b></button><button onclick="openInvoice()">🧾<br><b>Create invoice</b></button></div></div>
+<div class="card"><h3>Business Overview</h3><p>Paid: <b id="paid">R0.00</b></p><p>Outstanding: <b id="out">R0.00</b></p></div>
+</div>
+<div class="card"><h3>Recent Invoices</h3><div id="recent" class="tablewrap"></div></div>
+</section>
+
+<section id="customers" class="page">
+<div class="header"><div><h2>Customers</h2><p>Manage your customer information.</p></div><button class="btn green" onclick="openCustomer()">+ Add customer</button></div>
+<div class="card"><div class="field"><input id="csearch" placeholder="Search customers..." oninput="renderCustomers()"></div><div id="ctable" class="tablewrap"></div></div>
+</section>
+
+<section id="products" class="page">
+<div class="header"><div><h2>Products & Services</h2><p>Manage what your business sells.</p></div><button class="btn green" onclick="openProduct()">+ Add product</button></div>
+<div class="card"><div class="field"><input id="psearch" placeholder="Search products..." oninput="renderProducts()"></div><div id="ptable" class="tablewrap"></div></div>
+</section>
+
+<section id="quotes" class="page">
+<div class="header"><div><h2>Quotes</h2><p>Create and manage customer quotes.</p></div><button class="btn green" onclick="openQuote()">+ New quote</button></div>
+<div class="card"><div id="qtable" class="tablewrap"></div></div>
+</section>
+
+<section id="invoices" class="page">
+<div class="header"><div><h2>Invoices</h2><p>Create invoices and track payments.</p></div><button class="btn green" onclick="openInvoice()">+ New invoice</button></div>
+<div class="card"><div id="itable" class="tablewrap"></div></div>
+</section>
+
+<section id="directory" class="page">
+<div class="header"><div><h2>Business Directory</h2><p>Store useful business contacts.</p></div><button class="btn green" onclick="openDirectory()">+ Add listing</button></div>
+<div class="card"><div id="dtable" class="tablewrap"></div></div>
+</section>
+
+<section id="whatsapp" class="page">
+<div class="header"><div><h2>WhatsApp Centre</h2><p>Create messages and open WhatsApp.</p></div></div>
+<div class="card"><div class="field"><label>Phone number</label><input id="wap" placeholder="27821234567"></div><div class="field"><label>Message</label><textarea id="wam" placeholder="Type your message..."></textarea></div><button class="btn green" onclick="wa()">Open WhatsApp</button></div>
+<div class="card"><h3>Quick Messages</h3><div class="quick"><button onclick="setWA('Hello! Thank you for contacting our business. How may we help you?')">👋 Greeting</button><button onclick="setWA('Hello! This is a friendly reminder regarding your outstanding invoice. Please contact us if you need assistance.')">🧾 Payment reminder</button><button onclick="setWA('Hello! Your order is ready. Thank you for choosing our business.')">📦 Order ready</button><button onclick="setWA('Thank you for supporting our business. We appreciate your support!')">❤️ Thank you</button></div></div>
+</section>
+
+<section id="auto" class="page">
+<div class="header"><div><h2>Auto Response</h2><p>Generate professional replies.</p></div></div>
+<div class="card"><div class="field"><label>Customer message</label><textarea id="ain" placeholder="Example: How much does your service cost?"></textarea></div><button class="btn green" onclick="generate()">Generate response</button><div class="field" style="margin-top:18px"><label>Suggested reply</label><textarea id="aout" readonly></textarea></div><button class="btn light" onclick="copyResponse()">Copy response</button></div>
+</section>
+
+<section id="premium" class="page">
+<div class="header"><div><h2>BusinessKit PRO</h2><p>Premium business features.</p></div></div>
+<div class="card"><h3>⭐ PRO Features</h3><p>✓ Advanced business tools</p><p>✓ Advanced reporting</p><p>✓ More automation</p><p>✓ Premium features</p><hr><h3>Current plan</h3><p id="premiumstatus">FREE</p><button class="btn green" onclick="upgrade()">Upgrade to PRO</button><p class="muted" style="font-size:12px;margin-top:12px">PRO access must only be activated after verified payment by your secure backend/PayFast webhook.</p></div>
+</section>
+
+<section id="profile" class="page">
+<div class="header"><div><h2>Business Profile</h2><p>Manage your business information.</p></div></div>
+<div class="card"><div class="profile"><div id="avatar" class="avatar">B</div><div><h3 id="pn">Business</h3><p id="po" class="muted">Owner</p></div></div><div class="field"><label>Business name</label><input id="pb"></div><div class="field"><label>Owner name</label><input id="poe"></div><div class="field"><label>Email</label><input id="pem" disabled></div><button class="btn green" onclick="saveProfile()">Save profile</button></div>
+</section>
+
+<section id="account" class="page">
+<div class="header"><div><h2>Account</h2><p>Manage your account.</p></div></div>
+<div class="card"><p>Email: <b id="ae"></b></p><p>Plan: <b id="ap"></b></p><button class="btn danger" onclick="logout()">Log out</button></div>
+</section>
+
+</main></div>
+
+<!-- MODALS -->
+<div id="cm" class="modal"><div class="modalbox"><div class="modalhead"><h3>Add Customer</h3><button class="close" onclick="closeM('cm')">×</button></div><div class="field"><label>Name</label><input id="cn"></div><div class="field"><label>Phone</label><input id="cp"></div><div class="field"><label>Email</label><input id="ce"></div><div class="field"><label>Address</label><textarea id="ca"></textarea></div><button class="primary" onclick="addCustomer()">Save customer</button></div></div>
+
+<div id="pm" class="modal"><div class="modalbox"><div class="modalhead"><h3>Add Product / Service</h3><button class="close" onclick="closeM('pm')">×</button></div><div class="field"><label>Name</label><input id="prn"></div><div class="field"><label>Price (ZAR)</label><input id="prp" type="number" step="0.01"></div><div class="field"><label>Description</label><textarea id="prd"></textarea></div><button class="primary" onclick="addProduct()">Save product</button></div></div>
+
+<div id="qm" class="modal"><div class="modalbox"><div class="modalhead"><h3>Create Quote</h3><button class="close" onclick="closeM('qm')">×</button></div><div class="field"><label>Customer</label><select id="qc"></select></div><div class="field"><label>Amount (ZAR)</label><input id="qa" type="number" step="0.01"></div><div class="field"><label>Description</label><textarea id="qd"></textarea></div><button class="primary" onclick="addQuote()">Save quote</button></div></div>
+
+<div id="im" class="modal"><div class="modalbox"><div class="modalhead"><h3>Create Invoice</h3><button class="close" onclick="closeM('im')">×</button></div><div class="field"><label>Customer</label><select id="ic"></select></div><div class="field"><label>Amount (ZAR)</label><input id="ia" type="number" step="0.01"></div><div class="field"><label>Description</label><textarea id="idc"></textarea></div><div class="field"><label>Status</label><select id="is"><option value="unpaid">Unpaid</option><option value="paid">Paid</option></select></div><button class="primary" onclick="addInvoice()">Save invoice</button></div></div>
+
+<div id="dm" class="modal"><div class="modalbox"><div class="modalhead"><h3>Add Directory Listing</h3><button class="close" onclick="closeM('dm')">×</button></div><div class="field"><label>Business name</label><input id="dn"></div><div class="field"><label>Category</label><input id="dcat"></div><div class="field"><label>Phone</label><input id="dph"></div><div class="field"><label>Location</label><input id="dloc"></div><button class="primary" onclick="addDirectory()">Save listing</button></div></div>
+
+<div id="toast"></div>
+
+<script>
+/* SUPABASE CONFIGURATION */
+const SUPABASE_URL="https://mmpvzznmbfjwjqmrxqpo.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tcHZ6em5tYmZqd2pxbXJ4cXBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MjMwOTYsImV4cCI6MjEwNDM5OTA5Nn0.Kao-vXR_W6UsSRtBTZzAF6ehQl_QbEUW5j85Kf3u8S0";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let user=null, profile=null, customers=[], products=[], quotes=[], invoices=[], directory=[];
+
+const $=id=>document.getElementById(id);
+const val=id=>$(id)?.value.trim()||"";
+const money=n=>"R"+Number(n||0).toLocaleString("en-ZA",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+
+function msg(t,e=false){$("authmsg").textContent=t;$("authmsg").style.color=e?"#c62828":"#08783e"}
+function toast(t){$("toast").textContent=t;$("toast").style.display="block";clearTimeout(window.tt);window.tt=setTimeout(()=>$("toast").style.display="none",2800)}
+function closeM(id){$(id).classList.remove("show")}
+function reset(ids){ids.forEach(id=>{if($(id))$(id).value=""})}
+
+function authMode(mode){
+$("loginForm").classList.toggle("hidden",mode!=="login");$("signupForm").classList.toggle("hidden",mode==="login");
+$("lt").classList.toggle("active",mode==="login");$("st").classList.toggle("active",mode==="signup");msg("");
+}
+
+async function init(){
+try{
+const {data}=await sb.auth.getSession();
+if(data.session){user=data.session.user;await start()}else{$("auth").style.display="flex"}
+sb.auth.onAuthStateChange((e,s)=>{if(s)user=s.user});
+}catch(e){msg(e.message,true)}
+$("loading").style.display="none";
+}
+document.addEventListener("DOMContentLoaded",init);
+
+$("loginForm").addEventListener("submit",async e=>{
+e.preventDefault();msg("Logging in...");
+const {data,error}=await sb.auth.signInWithPassword({email:val("le"),password:$("lp").value});
+if(error)return msg(error.message,true);user=data.user;await start();
+});
+
+$("signupForm").addEventListener("submit",async e=>{
+e.preventDefault();msg("Creating account...");
+const business=val("sb"),owner=val("so"),email=val("se"),password=$("sp").value;
+const {data,error}=await sb.auth.signUp({email,password,options:{data:{business_name:business,owner_name:owner}}});
+if(error)return msg(error.message,true);
+if(data.session){user=data.user;await makeProfile(business,owner,email);await start()}
+else msg("Account created. Check your email to verify your account.");
+});
+
+async function makeProfile(b,o,e){
+await sb.from("profiles").upsert({id:user.id,business_name:b,owner_name:o,email:e,plan:"free"});
+}
+async function loadProfile(){
+let {data}=await sb.from("profiles").select("*").eq("id",user.id).maybeSingle();profile=data;
+if(!profile){
+const m=user.user_metadata||{};await makeProfile(m.business_name||"My Business",m.owner_name||"Business Owner",user.email);
+({data}=await sb.from("profiles").select("*").eq("id",user.id).maybeSingle());profile=data;
+}
+}
+async function start(){
+$("auth").style.display="none";$("app").style.display="block";
+await loadProfile();await loadAll();updateUI();go("dashboard");
+}
+async function loadAll(){await Promise.all([loadCustomers(),loadProducts(),loadQuotes(),loadInvoices(),loadDirectory()])}
+async function loadCustomers(){const r=await sb.from("customers").select("*").eq("user_id",user.id).order("created_at",{ascending:false});customers=r.error?[]:(r.data||[]);renderCustomers()}
+async function loadProducts(){const r=await sb.from("products").select("*").eq("user_id",user.id).order("created_at",{ascending:false});products=r.error?[]:(r.data||[]);renderProducts()}
+async function loadQuotes(){const r=await sb.from("quotes").select("*").eq("user_id",user.id).order("created_at",{ascending:false});quotes=r.error?[]:(r.data||[]);renderQuotes()}
+async function loadInvoices(){const r=await sb.from("invoices").select("*").eq("user_id",user.id).order("created_at",{ascending:false});invoices=r.error?[]:(r.data||[]);renderInvoices();renderRecent();dash()}
+async function loadDirectory(){const r=await sb.from("directory").select("*").eq("user_id",user.id).order("created_at",{ascending:false});directory=r.error?[]:(r.data||[]);renderDirectory()}
+
+function go(page){
+document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(page).classList.add("active");
+document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.p===page));$("sidebar").classList.remove("open");
+}
+function menu(){$("sidebar").classList.toggle("open")}
+
+function updateUI(){
+const b=profile?.business_name||"My Business",o=profile?.owner_name||"Business Owner",p=profile?.plan||"free";
+$("welcome").textContent=`Welcome back, ${o}. Here's your business overview.`;
+$("plan").textContent=p.toUpperCase()+" PLAN";$("premiumstatus").textContent=p.toUpperCase();$("ae").textContent=user.email;$("ap").textContent=p.toUpperCase();
+$("pb").value=b;$("poe").value=o;$("pem").value=profile?.email||user.email;$("pn").textContent=b;$("po").textContent=o;$("avatar").textContent=b.charAt(0).toUpperCase();dash();
+}
+function dash(){
+const paid=invoices.filter(x=>x.status==="paid").reduce((a,x)=>a+Number(x.amount||0),0),out=invoices.filter(x=>x.status!=="paid").reduce((a,x)=>a+Number(x.amount||0),0);
+$("sc").textContent=customers.length;$("spc").textContent=products.length;$("sic").textContent=invoices.length;$("sr").textContent=money(paid);$("paid").textContent=money(paid);$("out").textContent=money(out);
+}
+
+function openCustomer(){reset(["cn","cp","ce","ca"]);$("cm").classList.add("show")}
+async function addCustomer(){
+const name=val("cn");if(!name)return toast("Enter the customer name.");
+const {data,error}=await sb.from("customers").insert({user_id:user.id,name,phone:val("cp"),email:val("ce"),address:val("ca")}).select().single();
+if(error)return toast(error.message);customers.unshift(data);closeM("cm");renderCustomers();dash();toast("Customer saved.");
+}
+function renderCustomers(){
+const q=val("csearch").toLowerCase(),list=customers.filter(c=>(c.name||"").toLowerCase().includes(q)||(c.email||"").toLowerCase().includes(q)||(c.phone||"").toLowerCase().includes(q));
+$("ctable").innerHTML=!list.length?'<div class="empty">No customers found.</div>':`<table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Address</th><th>Action</th></tr></thead><tbody>${list.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.phone||"-")}</td><td>${esc(c.email||"-")}</td><td>${esc(c.address||"-")}</td><td><button class="btn danger" onclick="delCustomer('${c.id}')">Delete</button></td></tr>`).join("")}</tbody></table>`;
+}
+async function delCustomer(id){if(!confirm("Delete this customer?"))return;const {error}=await sb.from("customers").delete().eq("id",id).eq("user_id",user.id);if(error)return toast(error.message);customers=customers.filter(x=>x.id!==id);renderCustomers();dash();toast("Customer deleted.")}
+
+function openProduct(){reset(["prn","prp","prd"]);$("pm").classList.add("show")}
+async function addProduct(){
+const name=val("prn"),price=Number(val("prp")||0);if(!name)return toast("Enter a product name.");
+const {data,error}=await sb.from("products").insert({user_id:user.id,name,price,description:val("prd")}).select().single();
+if(error)return toast(error.message);products.unshift(data);closeM("pm");renderProducts();dash();toast("Product saved.");
+}
+function renderProducts(){
+const q=val("psearch").toLowerCase(),list=products.filter(p=>(p.name||"").toLowerCase().includes(q));
+$("ptable").innerHTML=!list.length?'<div class="empty">No products or services found.</div>':`<table><thead><tr><th>Name</th><th>Price</th><th>Description</th><th>Action</th></tr></thead><tbody>${list.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${money(p.price)}</td><td>${esc(p.description||"-")}</td><td><button class="btn danger" onclick="delProduct('${p.id}')">Delete</button></td></tr>`).join("")}</tbody></table>`;
+}
+async function delProduct(id){if(!confirm("Delete this product?"))return;const {error}=await sb.from("products").delete().eq("id",id).eq("user_id",user.id);if(error)return toast(error.message);products=products.filter(x=>x.id!==id);renderProducts();dash();toast("Product deleted.")}
+
+function fillCustomers(id){$(id).innerHTML=customers.length?'<option value="">Select customer</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join(""):'<option value="">Add a customer first</option>'}
+function cname(id){return customers.find(c=>String(c.id)===String(id))?.name||"Unknown customer"}
+
+function openQuote(){fillCustomers("qc");reset(["qa","qd"]);$("qm").classList.add("show")}
+async function addQuote(){
+const customer_id=val("qc"),amount=Number(val("qa")||0);if(!customer_id)return toast("Select a customer.");
+const {data,error}=await sb.from("quotes").insert({user_id:user.id,customer_id,amount,description:val("qd"),status:"pending"}).select().single();
+if(error)return toast(error.message);quotes.unshift(data);closeM("qm");renderQuotes();toast("Quote created.");
+}
+function renderQuotes(){
+$("qtable").innerHTML=!quotes.length?'<div class="empty">No quotes created yet.</div>':`<table><thead><tr><th>Customer</th><th>Amount</th><th>Description</th><th>Status</th><th>Action</th></tr></thead><tbody>${quotes.map(q=>`<tr><td>${esc(cname(q.customer_id))}</td><td>${money(q.amount)}</td><td>${esc(q.description||"-")}</td><td><span class="badge unpaid">${esc(q.status||"pending").toUpperCase()}</span></td><td><button class="btn danger" onclick="delQuote('${q.id}')">Delete</button></td></tr>`).join("")}</tbody></table>`;
+}
+async function delQuote(id){if(!confirm("Delete this quote?"))return;const {error}=await sb.from("quotes").delete().eq("id",id).eq("user_id",user.id);if(error)return toast(error.message);quotes=quotes.filter(x=>x.id!==id);renderQuotes();toast("Quote deleted.")}
+
+function openInvoice(){fillCustomers("ic");reset(["ia","idc"]);$("is").value="unpaid";$("im").classList.add("show")}
+async function addInvoice(){
+const customer_id=val("ic"),amount=Number(val("ia")||0),status=val("is");if(!customer_id)return toast("Select a customer.");if(amount<=0)return toast("Enter a valid amount.");
+const {data,error}=await sb.from("invoices").insert({user_id:user.id,customer_id,amount,description:val("idc"),status}).select().single();
+if(error)return toast(error.message);invoices.unshift(data);closeM("im");renderInvoices();renderRecent();dash();toast("Invoice created.");
+}
+function invoiceHTML(list){
+return !list.length?'<div class="empty">No invoices created yet.</div>':`<table><thead><tr><th>Customer</th><th>Amount</th><th>Description</th><th>Status</th><th>Action</th></tr></thead><tbody>${list.map(i=>`<tr><td>${esc(cname(i.customer_id))}</td><td><b>${money(i.amount)}</b></td><td>${esc(i.description||"-")}</td><td><span class="badge ${i.status==="paid"?"paid":"unpaid"}">${esc(i.status||"unpaid").toUpperCase()}</span></td><td><button class="btn light" onclick="toggleInvoice('${i.id}')">${i.status==="paid"?"Mark unpaid":"Mark paid"}</button> <button class="btn danger" onclick="delInvoice('${i.id}')">Delete</button></td></tr>`).join("")}</tbody></table>`;
+}
+function renderInvoices(){$("itable").innerHTML=invoiceHTML(invoices)}
+function renderRecent(){$("recent").innerHTML=invoiceHTML(invoices.slice(0,5)).replace(/<th>Action<\/th>/,"").replace(/<td><button class="btn light".*?<\/td>/g,"")}
+async function toggleInvoice(id){
+const i=invoices.find(x=>x.id===id);if(!i)return;const status=i.status==="paid"?"unpaid":"paid";
+const {data,error}=await sb.from("invoices").update({status}).eq("id",id).eq("user_id",user.id).select().single();if(error)return toast(error.message);Object.assign(i,data);renderInvoices();renderRecent();dash();toast("Invoice status updated.")
+}
+async function delInvoice(id){if(!confirm("Delete this invoice?"))return;const {error}=await sb.from("invoices").delete().eq("id",id).eq("user_id",user.id);if(error)return toast(error.message);invoices=invoices.filter(x=>x.id!==id);renderInvoices();renderRecent();dash();toast("Invoice deleted.")}
+
+function openDirectory(){reset(["dn","dcat","dph","dloc"]);$("dm").classList.add("show")}
+async function addDirectory(){
+const name=val("dn");if(!name)return toast("Enter a business name.");
+const {data,error}=await sb.from("directory").insert({user_id:user.id,name,category:val("dcat"),phone:val("dph"),location:val("dloc")}).select().single();
+if(error)return toast(error.message);directory.unshift(data);closeM("dm");renderDirectory();toast("Listing saved.")
+}
+function renderDirectory(){
+$("dtable").innerHTML=!directory.length?'<div class="empty">No directory listings yet.</div>':`<table><thead><tr><th>Business</th><th>Category</th><th>Phone</th><th>Location</th><th>Action</th></tr></thead><tbody>${directory.map(d=>`<tr><td><b>${esc(d.name)}</b></td><td>${esc(d.category||"-")}</td><td>${esc(d.phone||"-")}</td><td>${esc(d.location||"-")}</td><td><button class="btn danger" onclick="delDirectory('${d.id}')">Delete</button></td></tr>`).join("")}</tbody></table>`;
+}
+async function delDirectory(id){if(!confirm("Delete this listing?"))return;const {error}=await sb.from("directory").delete().eq("id",id).eq("user_id",user.id);if(error)return toast(error.message);directory=directory.filter(x=>x.id!==id);renderDirectory();toast("Listing deleted.")}
+
+function setWA(t){$("wam").value=t}
+function wa(){const phone=val("wap").replace(/\D/g,""),message=val("wam");if(!phone)return toast("Enter a phone number.");if(!message)return toast("Enter a message.");window.open("https://wa.me/"+phone+"?text="+encodeURIComponent(message),"_blank")}
+
+function generate(){
+const x=val("ain").toLowerCase();if(!x)return toast("Enter a customer message.");let r;
+if(/price|cost|how much/.test(x))r="Hello! Thank you for contacting us. We'd be happy to provide our current pricing. Please let us know which product or service you're interested in.";
+else if(/open|hours|close/.test(x))r="Hello! Thank you for contacting us. Please let us know which day you're enquiring about and we'll assist you with our business hours.";
+else if(/order|delivery/.test(x))r="Hello! Thank you for your message. We'd be happy to assist with your order or delivery enquiry. Please send us your order details.";
+else if(/hello|hi/.test(x))r="Hello and welcome to our business! 👋 How can we assist you today?";
+else r="Hello! Thank you for contacting us. We have received your message and will be happy to assist you. Please provide any additional information you may have.";
+$("aout").value=r;
+}
+function copyResponse(){const t=val("aout");if(!t)return toast("Generate a response first.");navigator.clipboard?.writeText(t).then(()=>toast("Response copied.")).catch(()=>toast("Copy failed."))}
+function upgrade(){alert("PRO access is not activated by this button. Connect your secure payment backend and verified PayFast webhook before changing a user's plan.")}
+
+async function saveProfile(){
+const business=val("pb"),owner=val("poe");if(!business||!owner)return toast("Business and owner names are required.");
+const {data,error}=await sb.from("profiles").update({business_name:business,owner_name:owner}).eq("id",user.id).select().single();
+if(error)return toast(error.message);profile=data;updateUI();toast("Profile updated.")
+}
+async function logout(){await sb.auth.signOut();user=null;profile=null;customers=[];products=[];quotes=[];invoices=[];directory=[];$("app").style.display="none";$("auth").style.display="flex";authMode("login");msg("You have been logged out.")}
+
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
+</script>
+</body>
+</html>
